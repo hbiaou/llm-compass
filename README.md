@@ -1,7 +1,11 @@
 # LLM Compass
 
 <div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+
+<img src="llm-compass-logo.png" alt="LLM Compass Logo" width="120" height="120" />
+
+**Navigate the LLM landscape with confidence**
+
 </div>
 
 An intelligent tool that helps you find the perfect LLM model for your specific use case. LLM Compass analyzes your requirements and recommends the best models from OpenRouter's extensive database.
@@ -57,6 +61,7 @@ npm run dev
 ```
 
 This will start:
+
 - **Frontend**: Vite dev server on `http://localhost:3000`
 - **Backend**: Express server on `http://localhost:3001`
 
@@ -102,6 +107,7 @@ The app was migrated from `localStorage` (5MB limit) to IndexedDB, allowing stor
 ### Backend Proxy Pattern
 
 Direct browser calls to the Gemini API are blocked by security restrictions. The app uses a backend proxy pattern:
+
 - Frontend makes requests to `/api/recommend`
 - Backend securely handles Gemini API calls
 - API key never exposed to the browser
@@ -125,21 +131,55 @@ npm run build
 npm run preview
 ```
 
-## Migration Notes
-
-This project was migrated from Google AI Studio to a local development environment. Key changes:
-
-- Replaced CDN Tailwind with local installation
-- Upgraded storage from localStorage to IndexedDB
-- Added backend proxy for secure API key handling
-- Reorganized file structure to standard React/Vite conventions
-
-See `docs/MIGRATION_LESSONS.md` for detailed migration notes.
-
 ## License
 
-[Add your license here]
+MIT License
+
+Copyright (c) 2024 LLM Compass
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 
 ## Contributing
 
-[Add contribution guidelines here]
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+### How to Contribute
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+### Development Guidelines
+
+- Follow the existing code style and conventions
+- Write clear, descriptive commit messages
+- Add comments for complex logic
+- Test your changes before submitting
+- Update documentation as needed
+
+### Reporting Issues
+
+If you find a bug or have a feature request, please open an issue on GitHub with:
+
+- A clear description of the problem or feature
+- Steps to reproduce (for bugs)
+- Expected vs actual behavior
+- Any relevant error messages or screenshots
