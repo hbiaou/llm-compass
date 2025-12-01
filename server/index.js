@@ -229,6 +229,28 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'LLM Compass backend is running' });
 });
 
+// Root endpoint - provide API information
+app.get('/', (req, res) => {
+  res.json({
+    message: 'LLM Compass Backend API',
+    version: '1.0.0',
+    endpoints: {
+      health: '/api/health',
+      recommend: {
+        path: '/api/recommend',
+        method: 'POST',
+        description: 'Get LLM model recommendations based on use case',
+        body: {
+          useCase: 'string (required)',
+          models: 'array (required)',
+          count: 'number (optional, default: 3)'
+        }
+      }
+    },
+    note: 'This is the backend API server. Access the frontend at http://localhost:3000'
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`Backend server running on http://localhost:${PORT}`);
 });
