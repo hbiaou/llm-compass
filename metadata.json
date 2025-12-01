@@ -1,0 +1,5 @@
+{
+  "name": "LLM Compass",
+  "description": "An intelligent tool that recommends the best Large Language Model (LLM) from OpenRouter for your specific use case. Simply describe what you need to do, and the app will suggest the most suitable and cost-effective models.",
+  "requestFramePermissions": []
+}
