@@ -50,7 +50,12 @@ Create a `.env` file in the root directory:
 GEMINI_API_KEY=your_gemini_api_key_here
 ```
 
-**Important**: The API key does NOT need the `VITE_` prefix because it's only used in the backend server, not in the frontend. The frontend communicates with the backend proxy, which securely handles all Gemini API calls.
+**Note**: You can also use `GOOGLE_API_KEY` as an alternative name (both are supported).
+
+**Important**: The API key does NOT need the `VITE_` prefix because:
+- The `VITE_` prefix is **only** required for environment variables used in **client-side/browser code** in Vite
+- This API key is used in the **backend Node.js server** (using `dotenv`), which reads any environment variable without needing a prefix
+- The frontend never accesses the API key directly; it communicates with the backend proxy, which securely handles all Gemini API calls
 
 ### 3. Run the Application
 

@@ -18,12 +18,14 @@ app.use(cors());
 app.use(express.json());
 
 // Validate API key on startup
-if (!process.env.GEMINI_API_KEY) {
-  console.error('ERROR: GEMINI_API_KEY not set in .env file');
+// Accept both GEMINI_API_KEY and GOOGLE_API_KEY for compatibility
+const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+if (!apiKey) {
+  console.error('ERROR: GEMINI_API_KEY or GOOGLE_API_KEY must be set in .env file');
   process.exit(1);
 }
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const ai = new GoogleGenAI({ apiKey });
 
 // Helper: Extract constraints from use case
 const extractConstraints = async (useCase) => {
