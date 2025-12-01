@@ -40,8 +40,14 @@ export const getModelRecommendations = async (
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch {
+        errorData = { error: `HTTP error! status: ${response.status}`, details: await response.text() };
+      }
+      const errorMessage = errorData.error || errorData.details || `HTTP error! status: ${response.status}`;
+      throw new Error(errorMessage);
     }
 
     const recommendations = await response.json();

@@ -69,8 +69,18 @@ const extractConstraints = async (useCase) => {
       }
     });
     
+    // Handle different response formats
+    let text;
     if (response.text) {
-      return JSON.parse(response.text);
+      text = response.text;
+    } else if (response.response && typeof response.response.text === 'function') {
+      text = await response.response.text();
+    } else if (response.response?.candidates?.[0]?.content?.parts?.[0]?.text) {
+      text = response.response.candidates[0].content.parts[0].text;
+    }
+    
+    if (text) {
+      return JSON.parse(text);
     }
   } catch (e) {
     console.warn("Constraint extraction failed, proceeding with all models.", e);
@@ -215,7 +225,22 @@ Output JSON only.
       },
     });
 
-    const jsonStr = response.text.trim();
+    // Handle response - check if response.text exists, otherwise try response.response.text()
+    let jsonStr;
+    if (response.text) {
+      jsonStr = response.text.trim();
+    } else if (response.response && response.response.text) {
+      jsonStr = response.response.text().trim();
+    } else {
+      // Try to get text from candidates
+      const candidates = response.response?.candidates || response.candidates;
+      if (candidates && candidates[0] && candidates[0].content) {
+        jsonStr = candidates[0].content.parts[0].text.trim();
+      } else {
+        throw new Error('Unable to extract text from Gemini API response. Response structure: ' + JSON.stringify(response, null, 2));
+      }
+    }
+    
     const result = JSON.parse(jsonStr);
     res.json(result.recommendations);
   } catch (error) {

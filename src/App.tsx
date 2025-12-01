@@ -135,8 +135,9 @@ const App: React.FC = () => {
       setHistory(prev => [newHistoryItem, ...prev]);
 
     } catch (err) {
-      setError('Sorry, we could not generate recommendations. Please try again.');
-      console.error(err);
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+      setError(`Sorry, we could not generate recommendations: ${errorMessage}. Please try again.`);
+      console.error('Recommendation error:', err);
     } finally {
       setIsLoading(false);
       setLoadingStage(null);
