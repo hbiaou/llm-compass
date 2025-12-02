@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { AppSettings } from '../types';
 import { clearCache } from '../services/openRouterService';
 
@@ -7,10 +7,14 @@ interface SettingsProps {
   settings: AppSettings;
   onUpdateSettings: (newSettings: AppSettings) => void;
   lastUpdated: number | null;
-  onRefreshData: () => void;
+  onRefreshData: () => Promise<void> | void;
 }
 
 const Settings: React.FC<SettingsProps> = ({ settings, onUpdateSettings, lastUpdated, onRefreshData }) => {
+  const [isClearing, setIsClearing] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = parseInt(e.target.value);
     if (value < 1) value = 1;
@@ -23,8 +27,35 @@ const Settings: React.FC<SettingsProps> = ({ settings, onUpdateSettings, lastUpd
   };
 
   const handleClearCache = async () => {
+    setIsClearing(true);
+    setStatusMessage(null);
+    try {
       await clearCache();
-      onRefreshData();
+      await onRefreshData();
+      setStatusMessage('Cache cleared and models refreshed!');
+      // Clear message after 3 seconds
+      setTimeout(() => setStatusMessage(null), 3000);
+    } catch (error) {
+      setStatusMessage('Failed to refresh models. Please try again.');
+      setTimeout(() => setStatusMessage(null), 3000);
+    } finally {
+      setIsClearing(false);
+    }
+  };
+
+  const handleSync = async () => {
+    setIsSyncing(true);
+    setStatusMessage(null);
+    try {
+      await onRefreshData();
+      setStatusMessage('Models synced successfully!');
+      setTimeout(() => setStatusMessage(null), 3000);
+    } catch (error) {
+      setStatusMessage('Failed to sync models. Please try again.');
+      setTimeout(() => setStatusMessage(null), 3000);
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   return (
@@ -82,20 +113,51 @@ const Settings: React.FC<SettingsProps> = ({ settings, onUpdateSettings, lastUpd
                 <p className="text-xs text-text-secondary opacity-70 mt-1">
                   Last updated: {lastUpdated ? new Date(lastUpdated).toLocaleString() : 'Never'}
                 </p>
+                {/* Status message with animation */}
+                {statusMessage && (
+                  <p className={`text-xs mt-2 animate-pulse ${statusMessage.includes('Failed') ? 'text-red-500' : 'text-green-500'}`}>
+                    {statusMessage}
+                  </p>
+                )}
               </div>
               <div className="flex gap-2">
                  <button 
                   onClick={handleClearCache}
-                  className="px-3 py-2 bg-base-100 hover:bg-red-900/10 text-red-500 hover:text-red-600 text-sm font-medium rounded-lg border border-red-200 hover:border-red-300 transition-colors"
+                  disabled={isClearing || isSyncing}
+                  className="px-3 py-2 bg-base-100 hover:bg-red-900/10 text-red-500 hover:text-red-600 text-sm font-medium rounded-lg border border-red-200 hover:border-red-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
-                  Clear Cache
+                  {isClearing ? (
+                    <>
+                      <svg className="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Clearing...
+                    </>
+                  ) : (
+                    'Clear Cache'
+                  )}
                 </button>
                 <button 
-                  onClick={onRefreshData}
-                  className="px-4 py-2 bg-base-200 hover:bg-base-300 text-text-primary text-sm font-medium rounded-lg border border-base-300 transition-colors flex items-center gap-2"
+                  onClick={handleSync}
+                  disabled={isClearing || isSyncing}
+                  className="px-4 py-2 bg-base-200 hover:bg-base-300 text-text-primary text-sm font-medium rounded-lg border border-base-300 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
-                  Sync Now
+                  <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                  >
+                    <path d="M23 4v6h-6"></path>
+                    <path d="M1 20v-6h6"></path>
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                  </svg>
+                  {isSyncing ? 'Syncing...' : 'Sync Now'}
                 </button>
               </div>
             </div>
