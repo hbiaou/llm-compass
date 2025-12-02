@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { OpenRouterModel, Recommendation, HistoryItem, View, AppSettings, ProgressStage } from './types';
+import { OpenRouterModel, Recommendation, HistoryItem, View, AppSettings, ProgressStage, RecommendationMetadata } from './types';
 import { fetchModels, getCachedModels, cacheModels } from './services/openRouterService';
 import { getModelRecommendations } from './services/geminiService';
 import Header from './components/Header';
@@ -23,6 +23,7 @@ const App: React.FC = () => {
   const [allModels, setAllModels] = useState<OpenRouterModel[]>([]);
   const [lastUpdated, setLastUpdated] = useState<number | null>(null);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+  const [recommendationMetadata, setRecommendationMetadata] = useState<RecommendationMetadata | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [loadingStage, setLoadingStage] = useState<ProgressStage | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -100,13 +101,18 @@ const App: React.FC = () => {
       setIsLoading(true);
       setLoadingStage('analyzing'); // Initial Stage
       setRecommendations([]);
+      setRecommendationMetadata(null);
       
       // Pass the progress callback - models are cached server-side
-      const recommended = await getModelRecommendations(
+      const result = await getModelRecommendations(
         useCase, 
         settings.numRecommendations,
         (stage) => setLoadingStage(stage)
       );
+
+      // Extract recommendations and metadata from result
+      const { recommendations: recommended, metadata } = result;
+      setRecommendationMetadata(metadata);
 
       // Enrich recommendations with full model data
       const enrichedRecommendations = recommended
@@ -179,6 +185,96 @@ const App: React.FC = () => {
                 {!isLoading && recommendations.length > 0 && (
                   <div className="mt-12 animate-fade-in">
                     <h2 className="text-2xl font-bold text-center text-text-primary mb-6">Top {recommendations.length} Recommendations</h2>
+                    
+                    {/* Results Summary - Shows filtering/ranking metadata */}
+                    {recommendationMetadata && (
+                      <div className="mb-6 p-4 bg-base-200 rounded-lg border border-base-300">
+                        {/* Pipeline flow visualization */}
+                        <div className="flex flex-wrap items-center justify-center gap-2 text-sm text-text-secondary">
+                          <span className="font-medium text-text-primary">{recommendationMetadata.totalModels}</span>
+                          <span>models</span>
+                          <span className="text-base-300">→</span>
+                          <span className="font-medium text-text-primary">{recommendationMetadata.afterFiltering}</span>
+                          <span>filtered</span>
+                          <span className="text-base-300">→</span>
+                          <span className="font-medium text-text-primary">{recommendationMetadata.candidatesRanked}</span>
+                          <span>ranked</span>
+                          <span className="text-base-300">→</span>
+                          <span className="font-medium text-brand-secondary">{recommendations.length}</span>
+                          <span>recommended</span>
+                          <span className="ml-2 text-xs opacity-60">({recommendationMetadata.timing?.total_ms || 0}ms)</span>
+                        </div>
+                        
+                        {/* Show extracted constraints */}
+                        {recommendationMetadata.constraints && (
+                          <div className="mt-3 pt-3 border-t border-base-300 flex flex-wrap justify-center gap-2">
+                            {/* Input modalities (only show non-text) */}
+                            {recommendationMetadata.constraints.input_modalities
+                              ?.filter(m => m !== 'text')
+                              .map(m => (
+                                <span key={`in-${m}`} className="px-2 py-1 text-xs bg-blue-500/20 text-blue-400 rounded-full">
+                                  📥 {m} input
+                                </span>
+                              ))}
+                            
+                            {/* Output modalities (only show non-text) */}
+                            {recommendationMetadata.constraints.output_modalities
+                              ?.filter(m => m !== 'text')
+                              .map(m => (
+                                <span key={`out-${m}`} className="px-2 py-1 text-xs bg-purple-500/20 text-purple-400 rounded-full">
+                                  📤 {m} output
+                                </span>
+                              ))}
+                            
+                            {/* Context length */}
+                            {recommendationMetadata.constraints.min_context > 0 && (
+                              <span className="px-2 py-1 text-xs bg-green-500/20 text-green-400 rounded-full">
+                                📏 {Math.round(recommendationMetadata.constraints.min_context / 1000)}K+ context
+                              </span>
+                            )}
+                            
+                            {/* Price constraint */}
+                            {recommendationMetadata.constraints.max_price_per_million != null && (
+                              <span className="px-2 py-1 text-xs bg-yellow-500/20 text-yellow-400 rounded-full">
+                                💰 ≤${recommendationMetadata.constraints.max_price_per_million}/M tokens
+                              </span>
+                            )}
+                            
+                            {/* Speed preference */}
+                            {recommendationMetadata.constraints.speed_preference && 
+                             recommendationMetadata.constraints.speed_preference !== 'any' && (
+                              <span className="px-2 py-1 text-xs bg-cyan-500/20 text-cyan-400 rounded-full">
+                                {recommendationMetadata.constraints.speed_preference === 'fast' && '⚡ Fast'}
+                                {recommendationMetadata.constraints.speed_preference === 'balanced' && '⚖️ Balanced'}
+                                {recommendationMetadata.constraints.speed_preference === 'powerful' && '💪 Powerful'}
+                              </span>
+                            )}
+                            
+                            {/* Preferred providers */}
+                            {recommendationMetadata.constraints.preferred_providers?.length > 0 && (
+                              <span className="px-2 py-1 text-xs bg-indigo-500/20 text-indigo-400 rounded-full">
+                                🏢 {recommendationMetadata.constraints.preferred_providers.join(', ')}
+                              </span>
+                            )}
+                            
+                            {/* Capability keywords */}
+                            {recommendationMetadata.constraints.capability_keywords?.map(kw => (
+                              <span key={`cap-${kw}`} className="px-2 py-1 text-xs bg-base-300 text-text-secondary rounded-full">
+                                🔍 {kw}
+                              </span>
+                            ))}
+                            
+                            {/* Relax level indicator */}
+                            {recommendationMetadata.relaxLevel > 0 && (
+                              <span className="px-2 py-1 text-xs bg-orange-500/20 text-orange-400 rounded-full">
+                                ⚠️ Filters relaxed (level {recommendationMetadata.relaxLevel})
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {recommendations.map((rec) => (
                         <ModelCard key={rec.model_id} recommendation={rec} />

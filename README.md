@@ -1,24 +1,41 @@
-# LLM Compass
-
-<div align="center">
-
-<img src="llm-compass-logo.png" alt="LLM Compass Logo" width="120" height="120" />
-
-**Navigate the LLM landscape with confidence**
-
-</div>
+![LLM Compass Logo](assets/llm-compass-banner.png)
 
 An intelligent tool that helps you find the perfect LLM model for your specific use case. LLM Compass analyzes your requirements and recommends the best models from OpenRouter's extensive database.
 
+![Screenshot 1](assets/llm-compass-screenshot1.png)
+![Screenshot 2](assets/llm-compass-screenshot2.png)
+
 ## Features
 
+### Completed ✅
+
 - **Smart Recommendations**: AI-powered analysis of your use case to recommend the best LLM models
-- **Comprehensive Database**: Access to 500+ models from OpenRouter
-- **Modality Support**: Detects and filters models based on input/output modalities (text, image, audio, video, file)
+- **Comprehensive Database**: Access to 570+ models from OpenRouter's frontend API
+- **Three-Stage Pipeline**:
+  1. LLM-based constraint extraction (semantic understanding)
+  2. Deterministic filtering with progressive relaxation
+  3. Semantic ranking for final recommendations
+- **Modality Support**: Detects and filters models based on input/output modalities (text, image, audio, video, file, embeddings)
 - **Context-Aware**: Considers context length requirements for your tasks
 - **Cost-Conscious**: Filters models based on pricing when budget constraints are specified
+- **Provider Preferences**: Support for preferred/excluded providers (e.g., "open source only")
+- **Speed Preferences**: Filter by model size (fast/small vs powerful/large models)
+- **Capability Keywords**: Filter models by keywords in name/description
 - **Local Storage**: Uses IndexedDB for efficient local caching (no 5MB localStorage limit)
 - **Secure Backend**: API keys are securely handled server-side, never exposed to the browser
+- **Server-Side Model Caching**: Models cached on backend with 6-hour TTL
+- **Results Summary**: Visual display of pipeline metadata (constraints, timing, filtering stats)
+- **Loading Animations**: Visual feedback during cache clearing and data sync
+
+### Planned 🚀
+
+- **User Constraint Overrides**: Allow users to manually adjust extracted constraints before filtering
+- **Favorite Models**: Save and quickly access preferred models
+- **Comparison View**: Side-by-side comparison of recommended models
+- **Usage History Analytics**: Insights from recommendation history
+- **Export Recommendations**: Export results as JSON/CSV
+- **Model Bookmarking**: Bookmark models for later reference
+- **Custom Filtering UI**: Advanced filtering interface for power users
 
 ## Tech Stack
 
@@ -53,6 +70,7 @@ GEMINI_API_KEY=your_gemini_api_key_here
 **Note**: You can also use `GOOGLE_API_KEY` as an alternative name (both are supported).
 
 **Important**: The API key does NOT need the `VITE_` prefix because:
+
 - The `VITE_` prefix is **only** required for environment variables used in **client-side/browser code** in Vite
 - This API key is used in the **backend Node.js server** (using `dotenv`), which reads any environment variable without needing a prefix
 - The frontend never accesses the API key directly; it communicates with the backend proxy, which securely handles all Gemini API calls
@@ -117,10 +135,23 @@ Direct browser calls to the Gemini API are blocked by security restrictions. The
 - Backend securely handles Gemini API calls
 - API key never exposed to the browser
 
-### Two-Stage Recommendation Process
+### Three-Stage Recommendation Pipeline
 
-1. **Constraint Extraction**: Analyzes your use case to extract technical requirements (modalities, context length, pricing)
-2. **Semantic Ranking**: Filters and ranks models based on the extracted constraints
+1. **Stage 1 - Constraint Extraction** (LLM: Gemini 2.0 Flash)
+
+   - Semantically analyzes your use case description
+   - Extracts structured constraints: modalities, context length, pricing, providers, capability keywords
+   - Fast and cheap (~200ms, ~$0.0001/request)
+2. **Stage 2 - Deterministic Filtering** (No LLM)
+
+   - Applies extracted constraints to filter the 570+ models
+   - Progressive relaxation if filtering is too aggressive
+   - Instant execution (<10ms)
+3. **Stage 3 - Semantic Ranking** (LLM: Gemini 2.5 Flash)
+
+   - Ranks filtered candidates by semantic fit to your use case
+   - Considers price/performance balance and provider reliability
+   - Returns top N recommendations with explanations
 
 ## Development
 

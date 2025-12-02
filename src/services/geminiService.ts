@@ -1,5 +1,5 @@
 
-import { Recommendation, ProgressStage } from '../types';
+import { Recommendation, ProgressStage, RecommendationResult, RecommendationMetadata } from '../types';
 
 // Call backend API for model recommendations
 // The backend handles all Gemini API interactions securely
@@ -8,7 +8,7 @@ export const getModelRecommendations = async (
   useCase: string,
   count: number = 3,
   onProgress?: (stage: ProgressStage) => void
-): Promise<Recommendation[]> => {
+): Promise<RecommendationResult> => {
   // Update progress stages as we make the API call
   if (onProgress) onProgress('analyzing');
   
@@ -52,8 +52,8 @@ export const getModelRecommendations = async (
       throw new Error(errorMessage);
     }
 
-    const recommendations = JSON.parse(responseText);
-    return recommendations as Recommendation[];
+    const result = JSON.parse(responseText) as RecommendationResult;
+    return result;
   } catch (error) {
     console.error('Error fetching recommendations:', error);
     throw error;

@@ -90,57 +90,213 @@ const getModels = async () => {
 };
 
 // ============================================
-// FAST RULE-BASED CONSTRAINT EXTRACTION
-// (Replaces slow Gemini API call)
+// STAGE 1: LLM-BASED CONSTRAINT EXTRACTION
+// Uses small/cheap model (Gemini 2.0 Flash) for semantic understanding
 // ============================================
-const extractConstraints = (useCase) => {
-  const text = useCase.toLowerCase();
-  const constraints = {
-    required_modalities: [],
-    output_modalities: [],
-    min_context: 0,
-    max_price: undefined,
-  };
 
-  // Detect INPUT modalities
-  const imageInputKeywords = ['image', 'photo', 'picture', 'vision', 'ocr', 'screenshot', 'diagram', 'chart', 'visual', 'see', 'look at', 'describe this'];
-  const audioInputKeywords = ['audio', 'transcribe', 'speech', 'voice', 'listen', 'recording', 'podcast', 'meeting'];
-  const videoInputKeywords = ['video', 'youtube', 'watch', 'movie', 'clip'];
-  const fileInputKeywords = ['pdf', 'csv', 'excel', 'document', 'file', 'upload', 'codebase', 'repository'];
+// Constraint extraction prompt for the LLM
+const CONSTRAINT_EXTRACTION_PROMPT = `You are a constraint extractor for an LLM recommendation system.
 
-  if (imageInputKeywords.some(k => text.includes(k))) constraints.required_modalities.push('image');
-  if (audioInputKeywords.some(k => text.includes(k))) constraints.required_modalities.push('audio');
-  if (videoInputKeywords.some(k => text.includes(k))) constraints.required_modalities.push('video');
-  if (fileInputKeywords.some(k => text.includes(k))) constraints.required_modalities.push('file');
+Given a user's use case description, extract structured constraints to filter models from a database.
 
-  // Detect OUTPUT modalities
-  const imageOutputKeywords = ['generate image', 'create image', 'draw', 'illustration', 'create logo', 'make a picture'];
-  const embeddingKeywords = ['embedding', 'vector', 'rag', 'semantic search', 'similarity'];
+## Available Model Fields for Filtering
+- architecture.modality: format "input->output" (e.g., "text->text", "text+image->text", "text->embeddings")
+- context_length: number of tokens (e.g., 4096, 32000, 128000, 200000)
+- pricing.prompt: cost per token as string (e.g., "0.000001" means $1 per million tokens)
+- id: "provider/model-name" format (e.g., "openai/gpt-4o", "anthropic/claude-3-5-sonnet", "meta-llama/llama-3.1-70b")
+- name: human-readable model name
+- description: model description text
 
-  if (imageOutputKeywords.some(k => text.includes(k))) constraints.output_modalities.push('image');
-  if (embeddingKeywords.some(k => text.includes(k))) constraints.output_modalities.push('embeddings');
+## Output Schema
+Return a JSON object with these fields:
+{
+  "input_modalities": ["text"],        // Required inputs: "text", "image", "audio", "video", "file"
+  "output_modalities": ["text"],       // Required outputs: "text", "image", "embeddings"
+  "min_context": 0,                    // Minimum context window in tokens (0 = any)
+  "max_price_per_million": null,       // Max $/M input tokens (null = any price)
+  "preferred_providers": [],           // Provider prefixes to prefer (empty = any)
+  "excluded_providers": [],            // Provider prefixes to exclude
+  "capability_keywords": [],           // Words that SHOULD appear in model name/description
+  "exclude_keywords": [],              // Words that should NOT appear in name/description
+  "speed_preference": "any"            // "fast" (small models), "balanced", "powerful" (large models), "any"
+}
 
-  // Detect context length needs
-  const longContextKeywords = ['book', 'novel', 'entire codebase', 'full repository', 'long document', 'legal document', 'thesis'];
-  const mediumContextKeywords = ['article', 'report', 'essay', 'paper', 'chapter'];
+## Guidelines
+1. For chat/conversational use cases: add "chat" or "instruct" to capability_keywords, exclude "embedding", "base"
+2. For coding tasks: add "code" to capability_keywords
+3. For creative writing: don't over-constrain, most models work
+4. For "quick/fast responses": set speed_preference to "fast"
+5. For "best quality/accuracy": set speed_preference to "powerful"
+6. For budget constraints: set max_price_per_million (e.g., 1 for cheap, 0.5 for very cheap)
+7. For "open source" requests: prefer meta-llama, mistral, qwen; exclude openai, anthropic, google
+8. For multimodal (images, audio, video): set appropriate input_modalities
+9. Default to minimal constraints if unclear - don't over-filter
 
-  if (longContextKeywords.some(k => text.includes(k))) {
-    constraints.min_context = 128000;
-  } else if (mediumContextKeywords.some(k => text.includes(k))) {
-    constraints.min_context = 32000;
-  }
+## Examples
 
-  // Detect price constraints
-  const cheapKeywords = ['cheap', 'free', 'budget', 'low cost', 'affordable', 'inexpensive'];
-  if (cheapKeywords.some(k => text.includes(k))) {
-    constraints.max_price = 1; // $1 per million tokens
-  }
+User: "A chatbot for customer support with quick responses"
+{
+  "input_modalities": ["text"],
+  "output_modalities": ["text"],
+  "min_context": 8000,
+  "max_price_per_million": null,
+  "preferred_providers": [],
+  "excluded_providers": [],
+  "capability_keywords": ["chat", "instruct"],
+  "exclude_keywords": ["embedding", "base", "completion"],
+  "speed_preference": "fast"
+}
 
-  console.log('Extracted constraints:', constraints);
-  return constraints;
+User: "Analyze images of receipts and extract amounts"
+{
+  "input_modalities": ["text", "image"],
+  "output_modalities": ["text"],
+  "min_context": 0,
+  "max_price_per_million": null,
+  "preferred_providers": [],
+  "excluded_providers": [],
+  "capability_keywords": ["vision"],
+  "exclude_keywords": ["embedding"],
+  "speed_preference": "any"
+}
+
+User: "Code review for a large TypeScript codebase"
+{
+  "input_modalities": ["text"],
+  "output_modalities": ["text"],
+  "min_context": 128000,
+  "max_price_per_million": null,
+  "preferred_providers": [],
+  "excluded_providers": [],
+  "capability_keywords": ["code"],
+  "exclude_keywords": ["embedding"],
+  "speed_preference": "powerful"
+}
+
+User: "I want something like ChatGPT but open source and cheap"
+{
+  "input_modalities": ["text"],
+  "output_modalities": ["text"],
+  "min_context": 0,
+  "max_price_per_million": 1,
+  "preferred_providers": ["meta-llama", "mistral", "qwen"],
+  "excluded_providers": ["openai", "anthropic", "google"],
+  "capability_keywords": ["chat", "instruct"],
+  "exclude_keywords": ["embedding"],
+  "speed_preference": "any"
+}
+
+User: "Generate embeddings for RAG system"
+{
+  "input_modalities": ["text"],
+  "output_modalities": ["embeddings"],
+  "min_context": 0,
+  "max_price_per_million": null,
+  "preferred_providers": [],
+  "excluded_providers": [],
+  "capability_keywords": ["embedding"],
+  "exclude_keywords": [],
+  "speed_preference": "any"
+}
+
+Now extract constraints for this use case:
+`;
+
+// Default constraints (used as fallback)
+const DEFAULT_CONSTRAINTS = {
+  input_modalities: ['text'],
+  output_modalities: ['text'],
+  min_context: 0,
+  max_price_per_million: null,
+  preferred_providers: [],
+  excluded_providers: [],
+  capability_keywords: [],
+  exclude_keywords: ['embedding', 'base'],
+  speed_preference: 'any',
 };
 
-// Helper: Parse modality string
+// Extract constraints using LLM (Stage 1)
+const extractConstraintsWithLLM = async (useCase) => {
+  console.log('Stage 1: Extracting constraints with LLM...');
+  const startTime = Date.now();
+  
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.0-flash",  // Fast, cheap model for extraction
+      contents: CONSTRAINT_EXTRACTION_PROMPT + `"${useCase}"`,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            input_modalities: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING },
+              description: "Required input modalities"
+            },
+            output_modalities: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING },
+              description: "Required output modalities"
+            },
+            min_context: {
+              type: Type.NUMBER,
+              description: "Minimum context length in tokens"
+            },
+            max_price_per_million: {
+              type: Type.NUMBER,
+              nullable: true,
+              description: "Max price per million input tokens"
+            },
+            preferred_providers: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING },
+              description: "Preferred provider prefixes"
+            },
+            excluded_providers: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING },
+              description: "Excluded provider prefixes"
+            },
+            capability_keywords: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING },
+              description: "Keywords that should appear in model name/description"
+            },
+            exclude_keywords: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING },
+              description: "Keywords that should not appear"
+            },
+            speed_preference: {
+              type: Type.STRING,
+              description: "Speed preference: fast, balanced, powerful, any"
+            }
+          },
+          required: ["input_modalities", "output_modalities", "min_context", "capability_keywords", "exclude_keywords", "speed_preference"]
+        },
+      },
+    });
+
+    const jsonStr = response.text.trim();
+    const constraints = JSON.parse(jsonStr);
+    
+    const elapsed = Date.now() - startTime;
+    console.log(`Stage 1 completed in ${elapsed}ms. Constraints:`, JSON.stringify(constraints, null, 2));
+    
+    return constraints;
+  } catch (error) {
+    console.error('Stage 1 failed, using defaults:', error.message);
+    return DEFAULT_CONSTRAINTS;
+  }
+};
+
+// ============================================
+// STAGE 2: DETERMINISTIC FILTERING
+// Fast regex/keyword filtering based on extracted constraints
+// ============================================
+
+// Helper: Parse modality string from model data
 const parseModalityString = (modality) => {
   const [inputStr, outputStr] = modality.toLowerCase().split('->');
   const inputs = inputStr ? inputStr.split('+') : ['text'];
@@ -148,44 +304,129 @@ const parseModalityString = (modality) => {
   return { inputs, outputs };
 };
 
-// Helper: Filter models based on constraints
-const filterModels = (models, constraints) => {
+// Speed preference keywords (for soft filtering)
+const SPEED_KEYWORDS = {
+  fast: ['mini', 'flash', 'haiku', 'small', 'lite', 'tiny', '7b', '8b', '1b', '3b', 'instant'],
+  powerful: ['opus', 'pro', 'large', 'ultra', '70b', '72b', '405b', 'o1', 'reasoning'],
+};
+
+// Filter models based on LLM-extracted constraints (Stage 2)
+const filterModels = (models, constraints, relaxLevel = 0) => {
+  console.log(`Stage 2: Filtering with relax level ${relaxLevel}...`);
+  
   return models.filter(m => {
-    // Context Filter
-    if (constraints.min_context && m.context_length < constraints.min_context) {
-      return false;
+    const { inputs, outputs } = parseModalityString(m.architecture.modality);
+    const modelText = (m.name + ' ' + m.description + ' ' + m.id).toLowerCase();
+    
+    // 1. INPUT MODALITY FILTER (strict - relax at level 2)
+    if (relaxLevel < 2 && constraints.input_modalities && constraints.input_modalities.length > 0) {
+      const needsNonText = constraints.input_modalities.some(mod => mod !== 'text');
+      if (needsNonText) {
+        const supportsAllInputs = constraints.input_modalities.every(req => 
+          inputs.includes(req.toLowerCase())
+        );
+        if (!supportsAllInputs) return false;
+      }
     }
     
-    const { inputs, outputs } = parseModalityString(m.architecture.modality);
-
-    // Input Modality Filter
-    if (constraints.required_modalities && constraints.required_modalities.length > 0) {
-      const supportsAllInputs = constraints.required_modalities.every(req => {
-        return inputs.includes(req.toLowerCase());
-      });
-      if (!supportsAllInputs) return false;
+    // 2. OUTPUT MODALITY FILTER (strict - relax at level 2)
+    if (relaxLevel < 2 && constraints.output_modalities && constraints.output_modalities.length > 0) {
+      const needsNonText = constraints.output_modalities.some(mod => mod !== 'text');
+      if (needsNonText) {
+        const supportsAllOutputs = constraints.output_modalities.every(req => 
+          outputs.includes(req.toLowerCase())
+        );
+        if (!supportsAllOutputs) return false;
+      }
     }
-
-    // Output Modality Filter
-    if (constraints.output_modalities && constraints.output_modalities.length > 0) {
-      const supportsAllOutputs = constraints.output_modalities.every(req => {
-        return outputs.includes(req.toLowerCase());
-      });
-      if (!supportsAllOutputs) return false;
+    
+    // 3. CONTEXT LENGTH FILTER (relax at level 1)
+    if (relaxLevel < 1 && constraints.min_context && constraints.min_context > 0) {
+      if (m.context_length < constraints.min_context) return false;
     }
-
-    // Price Filter
-    if (constraints.max_price !== undefined) {
-      const price = parseFloat(m.pricing.prompt) * 1000000;
-      if (price > constraints.max_price) return false;
+    
+    // 4. PRICE FILTER (relax at level 1)
+    if (relaxLevel < 1 && constraints.max_price_per_million !== null && constraints.max_price_per_million !== undefined) {
+      const pricePerMillion = parseFloat(m.pricing.prompt) * 1000000;
+      if (pricePerMillion > constraints.max_price_per_million) return false;
     }
-
+    
+    // 5. PROVIDER PREFERENCE FILTER (soft - relax at level 1)
+    if (relaxLevel < 1 && constraints.preferred_providers && constraints.preferred_providers.length > 0) {
+      const matchesPreferred = constraints.preferred_providers.some(prov => 
+        m.id.toLowerCase().startsWith(prov.toLowerCase())
+      );
+      if (!matchesPreferred) return false;
+    }
+    
+    // 6. PROVIDER EXCLUSION FILTER (strict - relax at level 2)
+    if (relaxLevel < 2 && constraints.excluded_providers && constraints.excluded_providers.length > 0) {
+      const matchesExcluded = constraints.excluded_providers.some(prov => 
+        m.id.toLowerCase().startsWith(prov.toLowerCase())
+      );
+      if (matchesExcluded) return false;
+    }
+    
+    // 7. CAPABILITY KEYWORD FILTER (soft - at least one match, relax at level 1)
+    if (relaxLevel < 1 && constraints.capability_keywords && constraints.capability_keywords.length > 0) {
+      const hasCapability = constraints.capability_keywords.some(kw => 
+        modelText.includes(kw.toLowerCase())
+      );
+      if (!hasCapability) return false;
+    }
+    
+    // 8. EXCLUDE KEYWORD FILTER (strict - relax at level 2)
+    if (relaxLevel < 2 && constraints.exclude_keywords && constraints.exclude_keywords.length > 0) {
+      const hasExcluded = constraints.exclude_keywords.some(kw => 
+        modelText.includes(kw.toLowerCase())
+      );
+      if (hasExcluded) return false;
+    }
+    
     return true;
   });
 };
 
+// Apply filtering with progressive relaxation if needed
+const filterModelsWithFallback = (models, constraints, minCandidates = 10) => {
+  // Try strict filtering first
+  let candidates = filterModels(models, constraints, 0);
+  console.log(`  Level 0 (strict): ${candidates.length} candidates`);
+  
+  if (candidates.length >= minCandidates) {
+    return { candidates, relaxLevel: 0 };
+  }
+  
+  // Relax level 1: Remove context, price, provider preference, capability keywords
+  candidates = filterModels(models, constraints, 1);
+  console.log(`  Level 1 (relaxed): ${candidates.length} candidates`);
+  
+  if (candidates.length >= minCandidates) {
+    return { candidates, relaxLevel: 1 };
+  }
+  
+  // Relax level 2: Only keep modality requirements for non-text
+  candidates = filterModels(models, constraints, 2);
+  console.log(`  Level 2 (minimal): ${candidates.length} candidates`);
+  
+  if (candidates.length >= minCandidates) {
+    return { candidates, relaxLevel: 2 };
+  }
+  
+  // Final fallback: All text-capable models
+  candidates = models.filter(m => {
+    const modality = m.architecture?.modality || 'text->text';
+    return modality.includes('text');
+  });
+  console.log(`  Fallback (text-capable): ${candidates.length} candidates`);
+  
+  return { candidates, relaxLevel: 3 };
+};
+
 // API endpoint for getting model recommendations
 app.post('/api/recommend', async (req, res) => {
+  const startTime = Date.now();
+  
   try {
     const { useCase, count = 3 } = req.body;
 
@@ -195,33 +436,38 @@ app.post('/api/recommend', async (req, res) => {
 
     // Get models from server cache (not from frontend request)
     const models = await getModels();
-    console.log(`Processing recommendation for: "${useCase.substring(0, 50)}..." with ${models.length} models`);
+    const totalModels = models.length;
+    console.log(`\n${'='.repeat(60)}`);
+    console.log(`Processing: "${useCase.substring(0, 60)}..."`);
+    console.log(`Database: ${totalModels} models`);
 
-    // STAGE 1: Extract Constraints & Filter (fast, rule-based - no API call)
-    const constraints = extractConstraints(useCase);
-    let candidates = filterModels(models, constraints);
-    console.log(`Filtering: ${models.length} -> ${candidates.length} candidates`);
+    // STAGE 1: Extract Constraints with LLM (semantic understanding)
+    const constraints = await extractConstraintsWithLLM(useCase);
+    const stage1Time = Date.now() - startTime;
 
-    // Fallback: If filtering is too aggressive (0 results), use text-only models
-    if (candidates.length === 0) {
-      console.log("Filtering returned 0 models. Using text-only models as fallback.");
-      // Get models that support at least text input/output
-      candidates = models.filter(m => {
-        const modality = m.architecture?.modality || 'text->text';
-        return modality.includes('text');
-      });
-      // If still empty, use all models
-      if (candidates.length === 0) {
-        candidates = models;
-      }
-    }
+    // STAGE 2: Deterministic Filtering with progressive relaxation
+    const stage2Start = Date.now();
+    const { candidates: filteredCandidates, relaxLevel } = filterModelsWithFallback(models, constraints);
+    let candidates = filteredCandidates;
+    const afterFiltering = candidates.length;
+    const stage2Time = Date.now() - stage2Start;
+    
+    console.log(`Filtering: ${totalModels} -> ${afterFiltering} candidates (relax level: ${relaxLevel})`);
 
-    // Limit candidates for Stage 2
+    // Limit candidates for Stage 3 (ranking)
     if (candidates.length > 50) {
+      // Sort by a simple heuristic before truncating (popular providers first)
+      candidates.sort((a, b) => {
+        const providerOrder = ['openai', 'anthropic', 'google', 'meta-llama', 'mistral'];
+        const aIdx = providerOrder.findIndex(p => a.id.toLowerCase().startsWith(p));
+        const bIdx = providerOrder.findIndex(p => b.id.toLowerCase().startsWith(p));
+        return (aIdx === -1 ? 999 : aIdx) - (bIdx === -1 ? 999 : bIdx);
+      });
       candidates = candidates.slice(0, 50);
     }
 
-    // STAGE 2: Semantic Ranking
+    // STAGE 3: Semantic Ranking with LLM
+    const stage3Start = Date.now();
     const modelListForAI = candidates.map(m => {
       const { inputs, outputs } = parseModalityString(m.architecture.modality);
       return {
@@ -242,26 +488,30 @@ app.post('/api/recommend', async (req, res) => {
     
     const modelListJsonString = JSON.stringify(modelListForAI);
 
-    const prompt = `
+    const rankingPrompt = `
 You are an expert AI model selector. Recommend the top ${count} models from the provided JSON list for this use case: "${useCase}".
 
 Data Key:
 - id: Model ID
 - desc: Description
 - ctx: Context Length
-- price: { in: Input cost, out: Output cost, img: Image cost }
+- price: { in: Input cost per token, out: Output cost per token, img: Image cost }
 - inputs: Supported Input types (text, image, audio, video, file)
 - outputs: Supported Output types (text, image, embeddings)
 - prov: Provider
 
-Consider the user's need for specific modalities (e.g., if they need to analyze video or generate embeddings) alongside cost and context.
+Ranking criteria:
+1. Semantic fit: How well does the model's description match the use case?
+2. Capability match: Does it support required modalities?
+3. Cost-effectiveness: Balance quality with price for the use case
+4. Provider reliability: Prefer established providers for production use cases
 
-Output JSON only.
+Output JSON only with your top ${count} recommendations.
     `;
 
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
-      contents: prompt + "\n\nCANDIDATE MODELS:\n" + modelListJsonString,
+      contents: rankingPrompt + "\n\nCANDIDATE MODELS:\n" + modelListJsonString,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -293,7 +543,42 @@ Output JSON only.
     // Get text from response - read only once to avoid stream already read error
     const jsonStr = response.text.trim();
     const result = JSON.parse(jsonStr);
-    res.json(result.recommendations);
+    const stage3Time = Date.now() - stage3Start;
+    
+    // Build metadata for frontend display
+    const processingTimeMs = Date.now() - startTime;
+    const metadata = {
+      totalModels,
+      constraints: {
+        input_modalities: constraints.input_modalities || [],
+        output_modalities: constraints.output_modalities || [],
+        min_context: constraints.min_context || 0,
+        max_price_per_million: constraints.max_price_per_million,
+        preferred_providers: constraints.preferred_providers || [],
+        excluded_providers: constraints.excluded_providers || [],
+        capability_keywords: constraints.capability_keywords || [],
+        exclude_keywords: constraints.exclude_keywords || [],
+        speed_preference: constraints.speed_preference || 'any',
+      },
+      afterFiltering,
+      relaxLevel,
+      candidatesRanked: modelListForAI.length,
+      timing: {
+        stage1_extraction_ms: stage1Time,
+        stage2_filtering_ms: stage2Time,
+        stage3_ranking_ms: stage3Time,
+        total_ms: processingTimeMs,
+      },
+    };
+    
+    console.log(`\nTiming: Stage1=${stage1Time}ms, Stage2=${stage2Time}ms, Stage3=${stage3Time}ms, Total=${processingTimeMs}ms`);
+    console.log(`${'='.repeat(60)}\n`);
+    
+    // Return both recommendations and metadata
+    res.json({
+      recommendations: result.recommendations,
+      metadata,
+    });
   } catch (error) {
     console.error('Error in /api/recommend:', error);
     res.status(500).json({ error: 'Failed to generate recommendations', details: error.message });
