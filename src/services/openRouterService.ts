@@ -2,8 +2,8 @@
 import { OpenRouterModel } from '../types';
 import { get, set, del } from 'idb-keyval';
 
-// Use frontend API to get all models (577+) instead of public API (333)
-const OPENROUTER_API_URL = 'https://openrouter.ai/api/frontend/models';
+// Use our backend proxy to avoid CORS issues with OpenRouter's frontend API
+const OPENROUTER_API_URL = '/api/models';
 const CACHE_KEY = 'llm_compass_models_cache';
 const CACHE_TIMESTAMP_KEY = 'llm_compass_models_timestamp';
 const CACHE_TTL = 72 * 60 * 60 * 1000; // 72 hours in milliseconds

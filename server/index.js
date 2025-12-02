@@ -233,6 +233,22 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'LLM Compass backend is running' });
 });
 
+// Proxy endpoint to fetch models from OpenRouter (avoids CORS issues)
+app.get('/api/models', async (req, res) => {
+  try {
+    const response = await fetch('https://openrouter.ai/api/frontend/models');
+    if (!response.ok) {
+      throw new Error(`OpenRouter API returned ${response.status}`);
+    }
+    const data = await response.json();
+    console.log(`Fetched ${data.data?.length || 0} models from OpenRouter`);
+    res.json(data);
+  } catch (error) {
+    console.error('Error fetching models from OpenRouter:', error);
+    res.status(500).json({ error: 'Failed to fetch models', details: error.message });
+  }
+});
+
 // Root endpoint - provide API information
 app.get('/', (req, res) => {
   res.json({
