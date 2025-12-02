@@ -15,7 +15,8 @@ const PORT = 3001;
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+// Increase JSON body size limit to handle large model lists (500+ models from OpenRouter)
+app.use(express.json({ limit: '50mb' }));
 
 // Validate API key on startup
 // Accept both GEMINI_API_KEY and GOOGLE_API_KEY for compatibility
