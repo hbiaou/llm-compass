@@ -1,7 +1,13 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppSettings } from '../types';
 import { clearCache } from '../services/openRouterService';
+
+interface ArenaInfo {
+  lastUpdated: string;
+  categories: string[];
+  totalModels: number;
+}
 
 interface SettingsProps {
   settings: AppSettings;
@@ -13,7 +19,62 @@ interface SettingsProps {
 const Settings: React.FC<SettingsProps> = ({ settings, onUpdateSettings, lastUpdated, onRefreshData }) => {
   const [isClearing, setIsClearing] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isReloadingArena, setIsReloadingArena] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [arenaInfo, setArenaInfo] = useState<ArenaInfo | null>(null);
+
+  // Fetch Arena info on mount
+  useEffect(() => {
+    fetchArenaInfo();
+  }, []);
+
+  const fetchArenaInfo = async () => {
+    try {
+      const response = await fetch('/api/arena');
+      if (response.ok) {
+        const data = await response.json();
+        setArenaInfo({
+          lastUpdated: data.metadata?.lastUpdated || 'Unknown',
+          categories: data.categories || [],
+          totalModels: data.totalModels || 0,
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch Arena info:', error);
+    }
+  };
+
+  const handleReloadArena = async () => {
+    setIsReloadingArena(true);
+    setStatusMessage(null);
+    try {
+      const response = await fetch('/api/arena/reload', { method: 'POST' });
+      const data = await response.json();
+      
+      if (data.success) {
+        setStatusMessage('Arena rankings reloaded! Models will show updated badges.');
+        await fetchArenaInfo();
+        // Also refresh models to get updated Arena data
+        await onRefreshData();
+      } else {
+        setStatusMessage('Failed to reload Arena rankings.');
+      }
+      setTimeout(() => setStatusMessage(null), 3000);
+    } catch (error) {
+      setStatusMessage('Failed to reload Arena rankings. Please try again.');
+      setTimeout(() => setStatusMessage(null), 3000);
+    } finally {
+      setIsReloadingArena(false);
+    }
+  };
+
+  // Check if Arena data is stale (> 30 days old)
+  const isArenaStale = () => {
+    if (!arenaInfo?.lastUpdated) return false;
+    const lastUpdate = new Date(arenaInfo.lastUpdated);
+    const daysSinceUpdate = (Date.now() - lastUpdate.getTime()) / (1000 * 60 * 60 * 24);
+    return daysSinceUpdate > 30;
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = parseInt(e.target.value);
@@ -104,6 +165,7 @@ const Settings: React.FC<SettingsProps> = ({ settings, onUpdateSettings, lastUpd
         <div>
           <h3 className="text-xl font-bold text-text-primary mb-4">Data Management</h3>
           <div className="p-4 bg-base-100 rounded-lg border border-base-300 space-y-4">
+            {/* Model Database */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
                 <h4 className="font-medium text-text-primary">Model Database</h4>
@@ -113,17 +175,11 @@ const Settings: React.FC<SettingsProps> = ({ settings, onUpdateSettings, lastUpd
                 <p className="text-xs text-text-secondary opacity-70 mt-1">
                   Last updated: {lastUpdated ? new Date(lastUpdated).toLocaleString() : 'Never'}
                 </p>
-                {/* Status message with animation */}
-                {statusMessage && (
-                  <p className={`text-xs mt-2 animate-pulse ${statusMessage.includes('Failed') ? 'text-red-500' : 'text-green-500'}`}>
-                    {statusMessage}
-                  </p>
-                )}
               </div>
               <div className="flex gap-2">
                  <button 
                   onClick={handleClearCache}
-                  disabled={isClearing || isSyncing}
+                  disabled={isClearing || isSyncing || isReloadingArena}
                   className="px-3 py-2 bg-base-100 hover:bg-red-900/10 text-red-500 hover:text-red-600 text-sm font-medium rounded-lg border border-red-200 hover:border-red-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   {isClearing ? (
@@ -140,7 +196,7 @@ const Settings: React.FC<SettingsProps> = ({ settings, onUpdateSettings, lastUpd
                 </button>
                 <button 
                   onClick={handleSync}
-                  disabled={isClearing || isSyncing}
+                  disabled={isClearing || isSyncing || isReloadingArena}
                   className="px-4 py-2 bg-base-200 hover:bg-base-300 text-text-primary text-sm font-medium rounded-lg border border-base-300 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <svg 
@@ -161,6 +217,58 @@ const Settings: React.FC<SettingsProps> = ({ settings, onUpdateSettings, lastUpd
                 </button>
               </div>
             </div>
+
+            {/* Divider */}
+            <div className="border-t border-base-300"></div>
+
+            {/* LM Arena Rankings */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <h4 className="font-medium text-text-primary flex items-center gap-2">
+                  🏆 LM Arena Rankings
+                  {isArenaStale() && (
+                    <span className="text-xs px-2 py-0.5 bg-yellow-500/20 text-yellow-500 rounded-full">
+                      Update needed
+                    </span>
+                  )}
+                </h4>
+                <p className="text-sm text-text-secondary mt-1">
+                  Human-evaluated model rankings from lmarena.ai
+                </p>
+                {arenaInfo && (
+                  <p className="text-xs text-text-secondary opacity-70 mt-1">
+                    Last updated: {arenaInfo.lastUpdated} • {arenaInfo.categories.length} categories • {arenaInfo.totalModels} ranked models
+                  </p>
+                )}
+              </div>
+              <button 
+                onClick={handleReloadArena}
+                disabled={isClearing || isSyncing || isReloadingArena}
+                className="px-4 py-2 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500 text-sm font-medium rounded-lg border border-yellow-500/30 hover:border-yellow-500/50 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isReloadingArena ? (
+                  <>
+                    <svg className="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Reloading...
+                  </>
+                ) : (
+                  <>
+                    <span>🔄</span>
+                    Reload Rankings
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Status message with animation */}
+            {statusMessage && (
+              <p className={`text-xs mt-2 animate-pulse ${statusMessage.includes('Failed') ? 'text-red-500' : 'text-green-500'}`}>
+                {statusMessage}
+              </p>
+            )}
           </div>
         </div>
 

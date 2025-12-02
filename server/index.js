@@ -661,6 +661,55 @@ app.get('/api/models', async (req, res) => {
   }
 });
 
+// Arena rankings endpoint - returns current Arena data and metadata
+app.get('/api/arena', (req, res) => {
+  if (!arenaRankings) {
+    return res.status(404).json({ 
+      error: 'Arena rankings not loaded',
+      message: 'The arena-rankings.json file could not be loaded'
+    });
+  }
+  
+  res.json({
+    metadata: arenaRankings.metadata,
+    categories: Object.keys(arenaRankings.categories),
+    totalModels: Object.values(arenaRankings.categories).reduce(
+      (sum, cat) => sum + cat.models.length, 0
+    ),
+  });
+});
+
+// Arena rankings reload endpoint - reloads data from disk
+app.post('/api/arena/reload', (req, res) => {
+  try {
+    const reloaded = loadArenaRankings();
+    if (reloaded) {
+      // Clear model cache to refresh Arena data on models
+      cachedModels = null;
+      cacheTimestamp = null;
+      
+      res.json({
+        success: true,
+        message: 'Arena rankings reloaded successfully',
+        metadata: reloaded.metadata,
+        categories: Object.keys(reloaded.categories).length,
+      });
+    } else {
+      res.status(500).json({ 
+        success: false,
+        error: 'Failed to reload Arena rankings'
+      });
+    }
+  } catch (error) {
+    console.error('Error reloading Arena rankings:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to reload Arena rankings',
+      details: error.message
+    });
+  }
+});
+
 // Root endpoint - provide API information
 app.get('/', (req, res) => {
   res.json({

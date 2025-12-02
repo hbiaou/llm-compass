@@ -26,6 +26,10 @@ An intelligent tool that helps you find the perfect LLM model for your specific 
 - **Server-Side Model Caching**: Models cached on backend with 6-hour TTL
 - **Results Summary**: Visual display of pipeline metadata (constraints, timing, filtering stats)
 - **Loading Animations**: Visual feedback during cache clearing and data sync
+- **LM Arena Integration**: Display model rankings from [lmarena.ai](https://lmarena.ai/leaderboard/) leaderboard
+  - Rankings shown as badges (🏆🥈🥉) on recommended models
+  - Categories: Text, WebDev, Vision, Coding, Math, Creative Writing, etc.
+  - Manual refresh available in Settings
 
 ### Planned 🚀
 
@@ -107,17 +111,21 @@ npm run client
 ```
 llm-compass/
 ├── src/
-│   ├── components/      # React components
+│   ├── components/      # React components (ModelCard, Settings, etc.)
 │   ├── services/        # API services (OpenRouter, Gemini)
 │   ├── App.tsx          # Main app component
 │   ├── main.tsx         # Entry point
 │   ├── types.ts         # TypeScript type definitions
 │   └── index.css        # Tailwind CSS styles
 ├── server/
-│   └── index.js         # Express backend server
+│   └── index.js         # Express backend (API proxy, constraint extraction)
+├── data/
+│   └── arena-rankings.json  # LM Arena leaderboard data (update monthly)
+├── assets/              # Images (logo, banner, screenshots)
 ├── .env                 # Environment variables (not in git)
 ├── vite.config.ts       # Vite configuration with proxy
 ├── tailwind.config.js   # Tailwind CSS configuration
+├── AGENT.md             # AI agent maintenance guide
 └── package.json         # Dependencies and scripts
 ```
 
