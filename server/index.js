@@ -4,11 +4,63 @@ import dotenv from 'dotenv';
 import { GoogleGenAI, Type } from '@google/genai';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
 
 // Load environment variables from root .env file
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
+
+// ============================================
+// LM ARENA RANKINGS (Static data from lmarena.ai)
+// ============================================
+let arenaRankings = null;
+
+// Load Arena rankings from JSON file
+const loadArenaRankings = () => {
+  try {
+    const arenaPath = path.resolve(__dirname, '../data/arena-rankings.json');
+    const data = fs.readFileSync(arenaPath, 'utf-8');
+    arenaRankings = JSON.parse(data);
+    console.log(`Loaded Arena rankings: ${Object.keys(arenaRankings.categories).length} categories`);
+    return arenaRankings;
+  } catch (error) {
+    console.warn('Warning: Could not load Arena rankings:', error.message);
+    return null;
+  }
+};
+
+// Get Arena rankings for a specific OpenRouter model ID
+const getArenaRankingsForModel = (openRouterId) => {
+  if (!arenaRankings) return null;
+  
+  const rankings = [];
+  
+  // Check each category for this model
+  for (const [categoryKey, category] of Object.entries(arenaRankings.categories)) {
+    const match = category.models.find(m => m.openRouterId === openRouterId);
+    if (match) {
+      rankings.push({
+        category: categoryKey,
+        categoryName: category.name,
+        rank: match.rank,
+        score: match.score,
+      });
+    }
+  }
+  
+  return rankings.length > 0 ? rankings : null;
+};
+
+// Get best Arena rank for a model (for sorting)
+const getBestArenaRank = (openRouterId) => {
+  const rankings = getArenaRankingsForModel(openRouterId);
+  if (!rankings) return Infinity;
+  return Math.min(...rankings.map(r => r.rank));
+};
+
+// Load Arena rankings on startup
+loadArenaRankings();
 
 const app = express();
 const PORT = 3001;
@@ -40,9 +92,13 @@ const transformModel = (raw) => {
   const inputModality = raw.input_modalities?.join('+') || 'text';
   const outputModality = raw.output_modalities?.join('+') || 'text';
   const modalityString = `${inputModality}->${outputModality}`;
+  const modelId = raw.slug;
+
+  // Get Arena rankings for this model
+  const arenaRankings = getArenaRankingsForModel(modelId);
 
   return {
-    id: raw.slug,
+    id: modelId,
     name: raw.name,
     description: raw.description || '',
     pricing: {
@@ -60,6 +116,8 @@ const transformModel = (raw) => {
     top_provider: raw.endpoint?.provider_name ? {
       name: raw.endpoint.provider_name,
     } : undefined,
+    // Arena rankings (if available)
+    arena: arenaRankings,
   };
 };
 

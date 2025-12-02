@@ -1,10 +1,52 @@
 
 import React from 'react';
-import { Recommendation } from '../types';
+import { Recommendation, ArenaRanking } from '../types';
 
 interface ModelCardProps {
   recommendation: Recommendation;
 }
+
+// Arena badge component - shows rank in a specific category
+const ArenaBadge: React.FC<{ ranking: ArenaRanking }> = ({ ranking }) => {
+  // Different colors based on rank
+  const getRankColor = (rank: number) => {
+    if (rank === 1) return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
+    if (rank <= 3) return 'bg-amber-500/20 text-amber-400 border-amber-500/30';
+    if (rank <= 5) return 'bg-slate-400/20 text-slate-300 border-slate-400/30';
+    return 'bg-slate-500/20 text-slate-400 border-slate-500/30';
+  };
+  
+  // Emoji based on rank
+  const getRankEmoji = (rank: number) => {
+    if (rank === 1) return '🏆';
+    if (rank === 2) return '🥈';
+    if (rank === 3) return '🥉';
+    return '🎯';
+  };
+
+  // Short category names
+  const shortNames: Record<string, string> = {
+    text: 'Text',
+    webdev: 'WebDev',
+    vision: 'Vision',
+    coding: 'Code',
+    math: 'Math',
+    creative_writing: 'Creative',
+    instruction_following: 'Instruct',
+    search: 'Search',
+    text_to_image: 'T2I',
+    text_to_video: 'T2V',
+  };
+
+  return (
+    <span 
+      className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border ${getRankColor(ranking.rank)}`}
+      title={`LM Arena: #${ranking.rank} in ${ranking.categoryName} (Elo: ${ranking.score})`}
+    >
+      {getRankEmoji(ranking.rank)} #{ranking.rank} {shortNames[ranking.category] || ranking.category}
+    </span>
+  );
+};
 
 const formatPrice = (price: string): string => {
   const p = parseFloat(price);
@@ -72,6 +114,20 @@ const ModelCard: React.FC<ModelCardProps> = ({ recommendation }) => {
              )}
           </div>
           <p className="text-xs text-text-secondary font-mono opacity-70 mt-1 truncate" title={model.id}>{model.id}</p>
+          
+          {/* LM Arena Rankings */}
+          {model.arena && model.arena.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {model.arena.slice(0, 3).map((ranking, i) => (
+                <ArenaBadge key={`arena-${i}`} ranking={ranking} />
+              ))}
+              {model.arena.length > 3 && (
+                <span className="text-[10px] text-text-secondary self-center">
+                  +{model.arena.length - 3} more
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Modalities Section */}

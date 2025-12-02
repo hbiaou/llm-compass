@@ -7,6 +7,14 @@ export interface AppSettings {
   numRecommendations: number;
 }
 
+// LM Arena ranking for a specific category
+export interface ArenaRanking {
+  category: string;           // Category key (e.g., "text", "coding", "vision")
+  categoryName: string;       // Human-readable name (e.g., "Text (Overall)")
+  rank: number;               // Rank in that category (1 = best)
+  score: number;              // Elo score
+}
+
 export interface OpenRouterModel {
   id: string;
   name: string;
@@ -27,10 +35,12 @@ export interface OpenRouterModel {
     name: string;
     max_retries: number;
   };
-  per_request_limits: {
+  per_request_limits?: {
     prompt_tokens: number;
     completion_tokens: number;
   } | null;
+  // LM Arena rankings (if available) - from lmarena.ai leaderboard
+  arena?: ArenaRanking[] | null;
 }
 
 export interface Recommendation {

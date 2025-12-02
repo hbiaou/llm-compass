@@ -1,0 +1,189 @@
+{
+  "metadata": {
+    "source": "https://lmarena.ai/leaderboard/",
+    "description": "LM Arena rankings based on blind human evaluations (Elo scoring)",
+    "lastUpdated": "2025-12-02",
+    "note": "Model IDs mapped to OpenRouter format where possible"
+  },
+  "categories": {
+    "text": {
+      "name": "Text (Overall)",
+      "description": "General text generation capabilities",
+      "models": [
+        { "rank": 1, "name": "Gemini 3 Pro", "arenaId": "gemini-3-pro", "openRouterId": "google/gemini-2.0-flash-exp", "score": 1491 },
+        { "rank": 2, "name": "Grok 4.1 Thinking", "arenaId": "grok-4.1-thinking", "openRouterId": "x-ai/grok-beta", "score": 1481 },
+        { "rank": 3, "name": "Claude Opus 4.5 Thinking", "arenaId": "claude-opus-4-5-20251101-thinking-32k", "openRouterId": "anthropic/claude-3.5-sonnet", "score": 1467 },
+        { "rank": 4, "name": "Grok 4.1", "arenaId": "grok-4.1", "openRouterId": "x-ai/grok-beta", "score": 1465 },
+        { "rank": 5, "name": "Claude Opus 4.5", "arenaId": "claude-opus-4-5-20251101", "openRouterId": "anthropic/claude-3-opus", "score": 1460 },
+        { "rank": 6, "name": "GPT-5.1 High", "arenaId": "gpt-5.1-high", "openRouterId": "openai/gpt-4o", "score": 1457 },
+        { "rank": 7, "name": "Gemini 2.5 Pro", "arenaId": "gemini-2.5-pro", "openRouterId": "google/gemini-pro-1.5", "score": 1452 },
+        { "rank": 8, "name": "Claude Sonnet 4.5 Thinking", "arenaId": "claude-sonnet-4-5-20250929-thinking-32k", "openRouterId": "anthropic/claude-3.5-sonnet", "score": 1449 },
+        { "rank": 9, "name": "Claude Opus 4.1 Thinking", "arenaId": "claude-opus-4-1-20250805-thinking-16k", "openRouterId": "anthropic/claude-3-opus", "score": 1448 },
+        { "rank": 10, "name": "Claude Sonnet 4.5", "arenaId": "claude-sonnet-4-5-20250929", "openRouterId": "anthropic/claude-3.5-sonnet", "score": 1445 }
+      ]
+    },
+    "webdev": {
+      "name": "WebDev",
+      "description": "Web development and frontend coding",
+      "models": [
+        { "rank": 1, "name": "Claude Opus 4.5 Thinking", "arenaId": "claude-opus-4-5-20251101-thinking-32k", "openRouterId": "anthropic/claude-3.5-sonnet", "score": 1507 },
+        { "rank": 2, "name": "Gemini 3 Pro", "arenaId": "gemini-3-pro", "openRouterId": "google/gemini-2.0-flash-exp", "score": 1476 },
+        { "rank": 3, "name": "Claude Opus 4.5", "arenaId": "claude-opus-4-5-20251101", "openRouterId": "anthropic/claude-3-opus", "score": 1472 },
+        { "rank": 4, "name": "GPT-5 Medium", "arenaId": "gpt-5-medium", "openRouterId": "openai/gpt-4o", "score": 1401 },
+        { "rank": 5, "name": "Claude Sonnet 4.5 Thinking", "arenaId": "claude-sonnet-4-5-20250929-thinking-32k", "openRouterId": "anthropic/claude-3.5-sonnet", "score": 1400 },
+        { "rank": 6, "name": "GPT-5.1 Medium", "arenaId": "gpt-5.1-medium", "openRouterId": "openai/gpt-4o", "score": 1396 },
+        { "rank": 7, "name": "Claude Opus 4.1", "arenaId": "claude-opus-4-1-20250805", "openRouterId": "anthropic/claude-3-opus", "score": 1393 },
+        { "rank": 8, "name": "Claude Sonnet 4.5", "arenaId": "claude-sonnet-4-5-20250929", "openRouterId": "anthropic/claude-3.5-sonnet", "score": 1387 },
+        { "rank": 9, "name": "GLM-4.6", "arenaId": "glm-4.6", "openRouterId": "thudm/glm-4", "score": 1368 },
+        { "rank": 10, "name": "GPT-5.1", "arenaId": "gpt-5.1", "openRouterId": "openai/gpt-4o", "score": 1353 }
+      ]
+    },
+    "vision": {
+      "name": "Vision",
+      "description": "Image understanding and visual reasoning",
+      "models": [
+        { "rank": 1, "name": "Gemini 3 Pro", "arenaId": "gemini-3-pro", "openRouterId": "google/gemini-2.0-flash-exp", "score": 1324 },
+        { "rank": 2, "name": "Gemini 2.5 Pro", "arenaId": "gemini-2.5-pro", "openRouterId": "google/gemini-pro-1.5", "score": 1249 },
+        { "rank": 3, "name": "ChatGPT-4o Latest", "arenaId": "chatgpt-4o-latest-20250326", "openRouterId": "openai/gpt-4o", "score": 1237 },
+        { "rank": 4, "name": "GPT-4.5 Preview", "arenaId": "gpt-4.5-preview-2025-02-27", "openRouterId": "openai/gpt-4-turbo", "score": 1226 },
+        { "rank": 5, "name": "Gemini 2.5 Flash Preview", "arenaId": "gemini-2.5-flash-preview-09-2025", "openRouterId": "google/gemini-flash-1.5", "score": 1225 },
+        { "rank": 6, "name": "GPT-5 Chat", "arenaId": "gpt-5-chat", "openRouterId": "openai/gpt-4o", "score": 1222 },
+        { "rank": 7, "name": "O3", "arenaId": "o3-2025-04-16", "openRouterId": "openai/o1-preview", "score": 1219 },
+        { "rank": 8, "name": "GPT-4.1", "arenaId": "gpt-4.1-2025-04-14", "openRouterId": "openai/gpt-4-turbo", "score": 1216 },
+        { "rank": 9, "name": "Gemini 2.5 Flash", "arenaId": "gemini-2.5-flash", "openRouterId": "google/gemini-flash-1.5", "score": 1214 },
+        { "rank": 10, "name": "Claude Opus 4 Thinking", "arenaId": "claude-opus-4-20250514-thinking-16k", "openRouterId": "anthropic/claude-3-opus", "score": 1210 }
+      ]
+    },
+    "coding": {
+      "name": "Coding",
+      "description": "Programming and code generation",
+      "models": [
+        { "rank": 1, "name": "Gemini 3 Pro", "arenaId": "gemini-3-pro", "openRouterId": "google/gemini-2.0-flash-exp", "score": 1491 },
+        { "rank": 1, "name": "Grok 4.1 Thinking", "arenaId": "grok-4.1-thinking", "openRouterId": "x-ai/grok-beta", "score": 1481 },
+        { "rank": 1, "name": "Claude Opus 4.5 Thinking", "arenaId": "claude-opus-4-5-thinking", "openRouterId": "anthropic/claude-3.5-sonnet", "score": 1467 },
+        { "rank": 1, "name": "Claude Opus 4.5", "arenaId": "claude-opus-4-5", "openRouterId": "anthropic/claude-3-opus", "score": 1460 },
+        { "rank": 1, "name": "Claude Opus 4.1 Thinking", "arenaId": "claude-opus-4-1-thinking", "openRouterId": "anthropic/claude-3-opus", "score": 1448 },
+        { "rank": 1, "name": "Claude Sonnet 4.5 Thinking", "arenaId": "claude-sonnet-4-5-thinking", "openRouterId": "anthropic/claude-3.5-sonnet", "score": 1449 },
+        { "rank": 4, "name": "GPT-5.1 High", "arenaId": "gpt-5.1-high", "openRouterId": "openai/gpt-4o", "score": 1457 },
+        { "rank": 5, "name": "Grok 4.1", "arenaId": "grok-4.1", "openRouterId": "x-ai/grok-beta", "score": 1465 },
+        { "rank": 6, "name": "DeepSeek V3", "arenaId": "deepseek-v3", "openRouterId": "deepseek/deepseek-chat", "score": 1420 },
+        { "rank": 7, "name": "Qwen 2.5 Coder", "arenaId": "qwen-2.5-coder", "openRouterId": "qwen/qwen-2.5-coder-32b-instruct", "score": 1400 }
+      ]
+    },
+    "math": {
+      "name": "Math",
+      "description": "Mathematical reasoning and calculations",
+      "models": [
+        { "rank": 1, "name": "Gemini 3 Pro", "arenaId": "gemini-3-pro", "openRouterId": "google/gemini-2.0-flash-exp", "score": 1491 },
+        { "rank": 1, "name": "Grok 4.1 Thinking", "arenaId": "grok-4.1-thinking", "openRouterId": "x-ai/grok-beta", "score": 1481 },
+        { "rank": 1, "name": "Claude Opus 4.5 Thinking", "arenaId": "claude-opus-4-5-thinking", "openRouterId": "anthropic/claude-3.5-sonnet", "score": 1467 },
+        { "rank": 1, "name": "Claude Opus 4.5", "arenaId": "claude-opus-4-5", "openRouterId": "anthropic/claude-3-opus", "score": 1460 },
+        { "rank": 1, "name": "GPT-5.1 High", "arenaId": "gpt-5.1-high", "openRouterId": "openai/gpt-4o", "score": 1457 },
+        { "rank": 1, "name": "Claude Sonnet 4.5 Thinking", "arenaId": "claude-sonnet-4-5-thinking", "openRouterId": "anthropic/claude-3.5-sonnet", "score": 1449 },
+        { "rank": 4, "name": "Grok 4.1", "arenaId": "grok-4.1", "openRouterId": "x-ai/grok-beta", "score": 1465 },
+        { "rank": 4, "name": "Claude Opus 4.1 Thinking", "arenaId": "claude-opus-4-1-thinking", "openRouterId": "anthropic/claude-3-opus", "score": 1448 },
+        { "rank": 5, "name": "O1 Preview", "arenaId": "o1-preview", "openRouterId": "openai/o1-preview", "score": 1440 },
+        { "rank": 6, "name": "DeepSeek R1", "arenaId": "deepseek-r1", "openRouterId": "deepseek/deepseek-r1", "score": 1430 }
+      ]
+    },
+    "creative_writing": {
+      "name": "Creative Writing",
+      "description": "Creative content, stories, and artistic writing",
+      "models": [
+        { "rank": 1, "name": "Gemini 3 Pro", "arenaId": "gemini-3-pro", "openRouterId": "google/gemini-2.0-flash-exp", "score": 1491 },
+        { "rank": 2, "name": "Grok 4.1 Thinking", "arenaId": "grok-4.1-thinking", "openRouterId": "x-ai/grok-beta", "score": 1481 },
+        { "rank": 2, "name": "Claude Opus 4.5 Thinking", "arenaId": "claude-opus-4-5-thinking", "openRouterId": "anthropic/claude-3.5-sonnet", "score": 1467 },
+        { "rank": 2, "name": "Claude Opus 4.5", "arenaId": "claude-opus-4-5", "openRouterId": "anthropic/claude-3-opus", "score": 1460 },
+        { "rank": 2, "name": "GPT-5.1 High", "arenaId": "gpt-5.1-high", "openRouterId": "openai/gpt-4o", "score": 1457 },
+        { "rank": 2, "name": "Claude Sonnet 4.5 Thinking", "arenaId": "claude-sonnet-4-5-thinking", "openRouterId": "anthropic/claude-3.5-sonnet", "score": 1449 },
+        { "rank": 2, "name": "Claude Opus 4.1 Thinking", "arenaId": "claude-opus-4-1-thinking", "openRouterId": "anthropic/claude-3-opus", "score": 1448 },
+        { "rank": 3, "name": "Grok 4.1", "arenaId": "grok-4.1", "openRouterId": "x-ai/grok-beta", "score": 1465 },
+        { "rank": 4, "name": "Claude 3.5 Sonnet", "arenaId": "claude-3-5-sonnet", "openRouterId": "anthropic/claude-3.5-sonnet", "score": 1440 },
+        { "rank": 5, "name": "GPT-4o", "arenaId": "gpt-4o", "openRouterId": "openai/gpt-4o", "score": 1430 }
+      ]
+    },
+    "instruction_following": {
+      "name": "Instruction Following",
+      "description": "Following complex instructions accurately",
+      "models": [
+        { "rank": 1, "name": "Gemini 3 Pro", "arenaId": "gemini-3-pro", "openRouterId": "google/gemini-2.0-flash-exp", "score": 1491 },
+        { "rank": 1, "name": "Claude Opus 4.5 Thinking", "arenaId": "claude-opus-4-5-thinking", "openRouterId": "anthropic/claude-3.5-sonnet", "score": 1467 },
+        { "rank": 1, "name": "Claude Opus 4.5", "arenaId": "claude-opus-4-5", "openRouterId": "anthropic/claude-3-opus", "score": 1460 },
+        { "rank": 2, "name": "GPT-5.1 High", "arenaId": "gpt-5.1-high", "openRouterId": "openai/gpt-4o", "score": 1457 },
+        { "rank": 2, "name": "Claude Sonnet 4.5 Thinking", "arenaId": "claude-sonnet-4-5-thinking", "openRouterId": "anthropic/claude-3.5-sonnet", "score": 1449 },
+        { "rank": 2, "name": "Claude Opus 4.1 Thinking", "arenaId": "claude-opus-4-1-thinking", "openRouterId": "anthropic/claude-3-opus", "score": 1448 },
+        { "rank": 4, "name": "Grok 4.1 Thinking", "arenaId": "grok-4.1-thinking", "openRouterId": "x-ai/grok-beta", "score": 1481 },
+        { "rank": 5, "name": "Claude 3.5 Sonnet", "arenaId": "claude-3-5-sonnet", "openRouterId": "anthropic/claude-3.5-sonnet", "score": 1440 },
+        { "rank": 6, "name": "GPT-4o", "arenaId": "gpt-4o", "openRouterId": "openai/gpt-4o", "score": 1430 },
+        { "rank": 10, "name": "Grok 4.1", "arenaId": "grok-4.1", "openRouterId": "x-ai/grok-beta", "score": 1465 }
+      ]
+    },
+    "search": {
+      "name": "Search",
+      "description": "Web search and RAG capabilities",
+      "models": [
+        { "rank": 1, "name": "Grok 4 Fast Search", "arenaId": "grok-4-fast-search", "openRouterId": "x-ai/grok-beta", "score": 1166 },
+        { "rank": 2, "name": "Perplexity Sonar Pro High", "arenaId": "ppl-sonar-pro-high", "openRouterId": "perplexity/sonar-pro", "score": 1149 },
+        { "rank": 3, "name": "Gemini 2.5 Pro Grounding", "arenaId": "gemini-2.5-pro-grounding", "openRouterId": "google/gemini-pro-1.5", "score": 1142 },
+        { "rank": 4, "name": "O3 Search", "arenaId": "o3-search", "openRouterId": "openai/o1-preview", "score": 1142 },
+        { "rank": 5, "name": "Grok 4 Search", "arenaId": "grok-4-search", "openRouterId": "x-ai/grok-beta", "score": 1141 },
+        { "rank": 6, "name": "GPT-5 Search", "arenaId": "gpt-5-search", "openRouterId": "openai/gpt-4o", "score": 1132 },
+        { "rank": 7, "name": "Claude Opus 4.1 Search", "arenaId": "claude-opus-4-1-search", "openRouterId": "anthropic/claude-3-opus", "score": 1132 },
+        { "rank": 8, "name": "Claude Opus 4 Search", "arenaId": "claude-opus-4-search", "openRouterId": "anthropic/claude-3-opus", "score": 1130 },
+        { "rank": 9, "name": "Perplexity Sonar Reasoning Pro", "arenaId": "ppl-sonar-reasoning-pro-high", "openRouterId": "perplexity/sonar-reasoning", "score": 1127 },
+        { "rank": 10, "name": "Diffbot Small XL", "arenaId": "diffbot-small-xl", "openRouterId": null, "score": 1023 }
+      ]
+    },
+    "text_to_image": {
+      "name": "Text-to-Image",
+      "description": "Image generation from text prompts",
+      "models": [
+        { "rank": 1, "name": "Gemini 3 Pro Image", "arenaId": "gemini-3-pro-image-preview", "openRouterId": null, "score": 1236 },
+        { "rank": 2, "name": "Flux 2 Flex", "arenaId": "flux-2-flex", "openRouterId": "black-forest-labs/flux-1-schnell", "score": 1157 },
+        { "rank": 3, "name": "Gemini 2.5 Flash Image", "arenaId": "gemini-2.5-flash-image-preview", "openRouterId": null, "score": 1156 },
+        { "rank": 4, "name": "Hunyuan Image 3.0", "arenaId": "hunyuan-image-3.0", "openRouterId": null, "score": 1155 },
+        { "rank": 5, "name": "Flux 2 Pro", "arenaId": "flux-2-pro", "openRouterId": "black-forest-labs/flux-1-pro", "score": 1146 },
+        { "rank": 6, "name": "Imagen 4.0 Ultra", "arenaId": "imagen-4.0-ultra-generate-preview-06-06", "openRouterId": null, "score": 1144 },
+        { "rank": 7, "name": "Seedream 4 2K", "arenaId": "seedream-4-2k", "openRouterId": null, "score": 1144 },
+        { "rank": 8, "name": "Imagen 4.0", "arenaId": "imagen-4.0-generate-preview-06-06", "openRouterId": null, "score": 1131 },
+        { "rank": 9, "name": "Wan 2.5 T2I", "arenaId": "wan2.5-t2i-preview", "openRouterId": null, "score": 1125 },
+        { "rank": 10, "name": "Seedream 4 High Res", "arenaId": "seedream-4-high-res-fal", "openRouterId": null, "score": 1123 }
+      ]
+    },
+    "text_to_video": {
+      "name": "Text-to-Video",
+      "description": "Video generation from text prompts",
+      "models": [
+        { "rank": 1, "name": "Veo 3.1 Audio", "arenaId": "veo-3.1-audio", "openRouterId": null, "score": 1382 },
+        { "rank": 2, "name": "Veo 3.1 Fast Audio", "arenaId": "veo-3.1-fast-audio", "openRouterId": null, "score": 1379 },
+        { "rank": 3, "name": "Veo 3 Fast Audio", "arenaId": "veo-3-fast-audio", "openRouterId": null, "score": 1366 },
+        { "rank": 4, "name": "Sora 2 Pro", "arenaId": "sora-2-pro", "openRouterId": null, "score": 1359 },
+        { "rank": 5, "name": "Veo 3 Audio", "arenaId": "veo-3-audio", "openRouterId": null, "score": 1344 },
+        { "rank": 6, "name": "Sora 2", "arenaId": "sora-2", "openRouterId": null, "score": 1321 },
+        { "rank": 7, "name": "Veo 3 Fast", "arenaId": "veo-3-fast", "openRouterId": null, "score": 1263 },
+        { "rank": 8, "name": "Veo 3", "arenaId": "veo-3", "openRouterId": null, "score": 1255 },
+        { "rank": 9, "name": "Kling 2.5 Turbo", "arenaId": "kling-2.5-turbo-1080p", "openRouterId": null, "score": 1223 },
+        { "rank": 10, "name": "Luma Ray 3", "arenaId": "ray-3", "openRouterId": null, "score": 1208 }
+      ]
+    }
+  },
+  "openRouterIdMapping": {
+    "anthropic/claude-3.5-sonnet": ["claude-opus-4-5-thinking", "claude-sonnet-4-5-thinking", "claude-sonnet-4-5", "claude-3-5-sonnet"],
+    "anthropic/claude-3-opus": ["claude-opus-4-5", "claude-opus-4-1-thinking", "claude-opus-4-1", "claude-opus-4"],
+    "openai/gpt-4o": ["gpt-5.1-high", "gpt-5-medium", "gpt-5.1-medium", "gpt-5.1", "chatgpt-4o-latest", "gpt-4o"],
+    "openai/gpt-4-turbo": ["gpt-4.5-preview", "gpt-4.1"],
+    "openai/o1-preview": ["o3", "o1-preview"],
+    "google/gemini-2.0-flash-exp": ["gemini-3-pro"],
+    "google/gemini-pro-1.5": ["gemini-2.5-pro", "gemini-2.5-pro-grounding"],
+    "google/gemini-flash-1.5": ["gemini-2.5-flash-preview", "gemini-2.5-flash"],
+    "x-ai/grok-beta": ["grok-4.1-thinking", "grok-4.1", "grok-4-fast-search", "grok-4-search"],
+    "deepseek/deepseek-chat": ["deepseek-v3"],
+    "deepseek/deepseek-r1": ["deepseek-r1"],
+    "qwen/qwen-2.5-coder-32b-instruct": ["qwen-2.5-coder"],
+    "perplexity/sonar-pro": ["ppl-sonar-pro-high"],
+    "perplexity/sonar-reasoning": ["ppl-sonar-reasoning-pro-high"],
+    "meta-llama/llama-3.1-405b-instruct": ["llama-3.1-405b"],
+    "mistralai/mistral-large-latest": ["mistral-large"]
+  }
+}
+
