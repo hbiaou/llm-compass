@@ -2,10 +2,63 @@
 import { OpenRouterModel } from '../types';
 import { get, set, del } from 'idb-keyval';
 
-const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/models';
+// Use frontend API to get all models (577+) instead of public API (333)
+const OPENROUTER_API_URL = 'https://openrouter.ai/api/frontend/models';
 const CACHE_KEY = 'llm_compass_models_cache';
 const CACHE_TIMESTAMP_KEY = 'llm_compass_models_timestamp';
 const CACHE_TTL = 72 * 60 * 60 * 1000; // 72 hours in milliseconds
+
+// Interface for the raw data from OpenRouter frontend API
+interface RawOpenRouterModel {
+  slug: string;
+  name: string;
+  description: string;
+  context_length: number;
+  input_modalities: string[];
+  output_modalities: string[];
+  instruct_type: string | null;
+  endpoint: {
+    pricing: {
+      prompt: string;
+      completion: string;
+      image: string;
+      request: string;
+    };
+    provider_name: string;
+    quantization?: string;
+  };
+}
+
+// Transform raw API data to our OpenRouterModel format
+const transformModel = (raw: RawOpenRouterModel): OpenRouterModel => {
+  // Build modality string: "input1+input2->output1+output2"
+  const inputModality = raw.input_modalities?.join('+') || 'text';
+  const outputModality = raw.output_modalities?.join('+') || 'text';
+  const modalityString = `${inputModality}->${outputModality}`;
+
+  return {
+    id: raw.slug,
+    name: raw.name,
+    description: raw.description || '',
+    pricing: {
+      prompt: raw.endpoint?.pricing?.prompt || '0',
+      completion: raw.endpoint?.pricing?.completion || '0',
+      request: raw.endpoint?.pricing?.request || '0',
+      image: raw.endpoint?.pricing?.image || '0',
+    },
+    context_length: raw.context_length || 0,
+    architecture: {
+      modality: modalityString,
+      tokenizer: raw.endpoint?.quantization || 'unknown',
+      instruct_type: raw.instruct_type,
+    },
+    top_provider: raw.endpoint?.provider_name ? {
+      name: raw.endpoint.provider_name,
+      max_retries: 0,
+    } : undefined,
+    per_request_limits: null,
+  };
+};
 
 // Get cached models from IndexedDB (async)
 export const getCachedModels = async (): Promise<{ models: OpenRouterModel[], timestamp: number } | null> => {
@@ -59,5 +112,11 @@ export const fetchModels = async (): Promise<OpenRouterModel[]> => {
     throw new Error('Network response from OpenRouter was not ok');
   }
   const data = await response.json();
-  return data.data as OpenRouterModel[];
+  
+  // Transform raw API data to our format
+  const rawModels = data.data as RawOpenRouterModel[];
+  const transformedModels = rawModels.map(transformModel);
+  
+  console.log(`Fetched and transformed ${transformedModels.length} models from OpenRouter`);
+  return transformedModels;
 };
