@@ -1,11 +1,11 @@
 
-import { OpenRouterModel, Recommendation, ProgressStage } from '../types';
+import { Recommendation, ProgressStage } from '../types';
 
 // Call backend API for model recommendations
 // The backend handles all Gemini API interactions securely
+// Models are cached server-side - we only send the use case
 export const getModelRecommendations = async (
   useCase: string,
-  models: OpenRouterModel[],
   count: number = 3,
   onProgress?: (stage: ProgressStage) => void
 ): Promise<Recommendation[]> => {
@@ -13,20 +13,19 @@ export const getModelRecommendations = async (
   if (onProgress) onProgress('analyzing');
   
   try {
-    // The backend handles both constraint extraction and ranking
-    // We simulate progress updates during the request
+    // Simulate progress updates during the request
+    // Backend does: constraint extraction (instant) -> filtering -> Gemini ranking
     if (onProgress) {
-      // Simulate filtering stage after a short delay
       setTimeout(() => {
         if (onProgress) onProgress('filtering');
-      }, 500);
+      }, 100); // Fast - rule-based extraction is instant
       
-      // Simulate ranking stage after another delay
       setTimeout(() => {
         if (onProgress) onProgress('ranking');
-      }, 1000);
+      }, 200);
     }
 
+    // Only send useCase and count - backend uses its own cached models
     const response = await fetch('/api/recommend', {
       method: 'POST',
       headers: {
@@ -34,7 +33,6 @@ export const getModelRecommendations = async (
       },
       body: JSON.stringify({
         useCase,
-        models,
         count,
       }),
     });

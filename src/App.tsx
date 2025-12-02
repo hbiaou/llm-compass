@@ -55,25 +55,18 @@ const App: React.FC = () => {
       return;
     }
 
-    // Cache-First Strategy
+    // Cache-First Strategy - Only fetch when cache is expired or missing
+    // No background revalidation to avoid unnecessary API calls
     const cached = await getCachedModels();
     
     if (cached) {
-      // 1. Show cached data immediately
+      // Use cached data - no background fetch
       setAllModels(cached.models);
       setLastUpdated(cached.timestamp);
       setIsLoading(false);
-      
-      // 2. Background Revalidation (Silent)
-      fetchModels()
-        .then(async (freshModels) => {
-          setAllModels(freshModels);
-          await cacheModels(freshModels);
-          setLastUpdated(Date.now());
-        })
-        .catch(err => console.error("Background model update failed:", err));
+      console.log(`Using cached models: ${cached.models.length} models, cached at ${new Date(cached.timestamp).toLocaleString()}`);
     } else {
-      // No cache, fetch normally
+      // No cache or expired, fetch fresh data
       setIsLoading(true);
       setLoadingStage(null);
       try {
@@ -81,6 +74,7 @@ const App: React.FC = () => {
         setAllModels(models);
         await cacheModels(models);
         setLastUpdated(Date.now());
+        console.log(`Fetched fresh models: ${models.length} models`);
       } catch (err) {
         setError('Failed to fetch models from OpenRouter. Please try refreshing the page.');
         console.error(err);
@@ -107,10 +101,9 @@ const App: React.FC = () => {
       setLoadingStage('analyzing'); // Initial Stage
       setRecommendations([]);
       
-      // Pass the progress callback
+      // Pass the progress callback - models are cached server-side
       const recommended = await getModelRecommendations(
         useCase, 
-        allModels, 
         settings.numRecommendations,
         (stage) => setLoadingStage(stage)
       );

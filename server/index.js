@@ -15,8 +15,8 @@ const PORT = 3001;
 
 // Middleware
 app.use(cors());
-// Increase JSON body size limit to handle large model lists (500+ models from OpenRouter)
-app.use(express.json({ limit: '50mb' }));
+// Reduced JSON limit since we no longer receive models from frontend
+app.use(express.json({ limit: '1mb' }));
 
 // Validate API key on startup
 // Accept both GEMINI_API_KEY and GOOGLE_API_KEY for compatibility
@@ -28,57 +28,116 @@ if (!apiKey) {
 
 const ai = new GoogleGenAI({ apiKey });
 
-// Helper: Extract constraints from use case
-const extractConstraints = async (useCase) => {
-  const prompt = `
-    Analyze this use case and extract technical constraints for an LLM.
-    Use Case: "${useCase}"
-    
-    Return JSON with:
-    - required_modalities: array of strings. Detect implied inputs:
-       - "image": for "vision", "OCR", "describe photo", "read text from image", "diagram analysis".
-       - "audio": for "transcribe", "speech to text", "listen", "voice analysis", "meeting recording".
-       - "video": for "watch video", "video summary", "youtube analysis".
-       - "file": for "PDF", "CSV", "Excel", "upload document", "analyze file", "large codebase".
-       - [] (empty): for standard text-only input.
-    - output_modalities: array of strings. Detect implied outputs:
-       - "image": for "generate image", "create logo", "draw", "illustration".
-       - "embeddings": for "vector search", "RAG", "semantic similarity", "text embedding".
-       - [] (empty): for standard text generation.
-    - min_context: number. Estimate required tokens based on task scale:
-       - 128000: for "summarize book", "entire codebase", "long legal docs", "novel".
-       - 32000: for "articles", "reports", "essays".
-       - 0: default/small tasks.
-    - max_price: number (USD). Only set if user explicitly asks for "cheap", "free", "budget", "low cost".
-  `;
+// ============================================
+// SERVER-SIDE MODEL CACHE
+// ============================================
+let cachedModels = null;
+let cacheTimestamp = null;
+const MODEL_CACHE_TTL = 6 * 60 * 60 * 1000; // 6 hours in milliseconds
 
-  try {
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            required_modalities: { type: Type.ARRAY, items: { type: Type.STRING } },
-            output_modalities: { type: Type.ARRAY, items: { type: Type.STRING } },
-            min_context: { type: Type.INTEGER },
-            max_price: { type: Type.NUMBER },
-          }
-        }
-      }
-    });
-    
-    // Get text from response - read only once to avoid stream already read error
-    const text = response.text;
-    if (text) {
-      return JSON.parse(text);
-    }
-  } catch (e) {
-    console.warn("Constraint extraction failed, proceeding with all models.", e);
+// Transform raw API data to our format
+const transformModel = (raw) => {
+  const inputModality = raw.input_modalities?.join('+') || 'text';
+  const outputModality = raw.output_modalities?.join('+') || 'text';
+  const modalityString = `${inputModality}->${outputModality}`;
+
+  return {
+    id: raw.slug,
+    name: raw.name,
+    description: raw.description || '',
+    pricing: {
+      prompt: raw.endpoint?.pricing?.prompt || '0',
+      completion: raw.endpoint?.pricing?.completion || '0',
+      request: raw.endpoint?.pricing?.request || '0',
+      image: raw.endpoint?.pricing?.image || '0',
+    },
+    context_length: raw.context_length || 0,
+    architecture: {
+      modality: modalityString,
+      tokenizer: raw.endpoint?.quantization || 'unknown',
+      instruct_type: raw.instruct_type,
+    },
+    top_provider: raw.endpoint?.provider_name ? {
+      name: raw.endpoint.provider_name,
+    } : undefined,
+  };
+};
+
+// Fetch and cache models from OpenRouter
+const getModels = async () => {
+  const now = Date.now();
+  
+  // Return cached models if valid
+  if (cachedModels && cacheTimestamp && (now - cacheTimestamp < MODEL_CACHE_TTL)) {
+    console.log(`Using cached models: ${cachedModels.length} models`);
+    return cachedModels;
   }
-  return {};
+  
+  // Fetch fresh models
+  console.log('Fetching fresh models from OpenRouter...');
+  const response = await fetch('https://openrouter.ai/api/frontend/models');
+  if (!response.ok) {
+    throw new Error(`OpenRouter API returned ${response.status}`);
+  }
+  const data = await response.json();
+  
+  // Transform and cache
+  cachedModels = data.data.map(transformModel);
+  cacheTimestamp = now;
+  console.log(`Cached ${cachedModels.length} models from OpenRouter`);
+  
+  return cachedModels;
+};
+
+// ============================================
+// FAST RULE-BASED CONSTRAINT EXTRACTION
+// (Replaces slow Gemini API call)
+// ============================================
+const extractConstraints = (useCase) => {
+  const text = useCase.toLowerCase();
+  const constraints = {
+    required_modalities: [],
+    output_modalities: [],
+    min_context: 0,
+    max_price: undefined,
+  };
+
+  // Detect INPUT modalities
+  const imageInputKeywords = ['image', 'photo', 'picture', 'vision', 'ocr', 'screenshot', 'diagram', 'chart', 'visual', 'see', 'look at', 'describe this'];
+  const audioInputKeywords = ['audio', 'transcribe', 'speech', 'voice', 'listen', 'recording', 'podcast', 'meeting'];
+  const videoInputKeywords = ['video', 'youtube', 'watch', 'movie', 'clip'];
+  const fileInputKeywords = ['pdf', 'csv', 'excel', 'document', 'file', 'upload', 'codebase', 'repository'];
+
+  if (imageInputKeywords.some(k => text.includes(k))) constraints.required_modalities.push('image');
+  if (audioInputKeywords.some(k => text.includes(k))) constraints.required_modalities.push('audio');
+  if (videoInputKeywords.some(k => text.includes(k))) constraints.required_modalities.push('video');
+  if (fileInputKeywords.some(k => text.includes(k))) constraints.required_modalities.push('file');
+
+  // Detect OUTPUT modalities
+  const imageOutputKeywords = ['generate image', 'create image', 'draw', 'illustration', 'create logo', 'make a picture'];
+  const embeddingKeywords = ['embedding', 'vector', 'rag', 'semantic search', 'similarity'];
+
+  if (imageOutputKeywords.some(k => text.includes(k))) constraints.output_modalities.push('image');
+  if (embeddingKeywords.some(k => text.includes(k))) constraints.output_modalities.push('embeddings');
+
+  // Detect context length needs
+  const longContextKeywords = ['book', 'novel', 'entire codebase', 'full repository', 'long document', 'legal document', 'thesis'];
+  const mediumContextKeywords = ['article', 'report', 'essay', 'paper', 'chapter'];
+
+  if (longContextKeywords.some(k => text.includes(k))) {
+    constraints.min_context = 128000;
+  } else if (mediumContextKeywords.some(k => text.includes(k))) {
+    constraints.min_context = 32000;
+  }
+
+  // Detect price constraints
+  const cheapKeywords = ['cheap', 'free', 'budget', 'low cost', 'affordable', 'inexpensive'];
+  if (cheapKeywords.some(k => text.includes(k))) {
+    constraints.max_price = 1; // $1 per million tokens
+  }
+
+  console.log('Extracted constraints:', constraints);
+  return constraints;
 };
 
 // Helper: Parse modality string
@@ -128,20 +187,33 @@ const filterModels = (models, constraints) => {
 // API endpoint for getting model recommendations
 app.post('/api/recommend', async (req, res) => {
   try {
-    const { useCase, models, count = 3 } = req.body;
+    const { useCase, count = 3 } = req.body;
 
-    if (!useCase || !models || !Array.isArray(models)) {
-      return res.status(400).json({ error: 'Invalid request: useCase and models array required' });
+    if (!useCase) {
+      return res.status(400).json({ error: 'Invalid request: useCase is required' });
     }
 
-    // STAGE 1: Extract Constraints & Filter
-    const constraints = await extractConstraints(useCase);
-    let candidates = filterModels(models, constraints);
+    // Get models from server cache (not from frontend request)
+    const models = await getModels();
+    console.log(`Processing recommendation for: "${useCase.substring(0, 50)}..." with ${models.length} models`);
 
-    // Fallback: If filtering is too aggressive (0 results), revert to full list
+    // STAGE 1: Extract Constraints & Filter (fast, rule-based - no API call)
+    const constraints = extractConstraints(useCase);
+    let candidates = filterModels(models, constraints);
+    console.log(`Filtering: ${models.length} -> ${candidates.length} candidates`);
+
+    // Fallback: If filtering is too aggressive (0 results), use text-only models
     if (candidates.length === 0) {
-      console.log("Filtering returned 0 models. Reverting to full list.");
-      candidates = models;
+      console.log("Filtering returned 0 models. Using text-only models as fallback.");
+      // Get models that support at least text input/output
+      candidates = models.filter(m => {
+        const modality = m.architecture?.modality || 'text->text';
+        return modality.includes('text');
+      });
+      // If still empty, use all models
+      if (candidates.length === 0) {
+        candidates = models;
+      }
     }
 
     // Limit candidates for Stage 2
@@ -234,15 +306,12 @@ app.get('/api/health', (req, res) => {
 });
 
 // Proxy endpoint to fetch models from OpenRouter (avoids CORS issues)
+// Returns already-transformed models from server cache
 app.get('/api/models', async (req, res) => {
   try {
-    const response = await fetch('https://openrouter.ai/api/frontend/models');
-    if (!response.ok) {
-      throw new Error(`OpenRouter API returned ${response.status}`);
-    }
-    const data = await response.json();
-    console.log(`Fetched ${data.data?.length || 0} models from OpenRouter`);
-    res.json(data);
+    const models = await getModels();
+    // Return in same format as OpenRouter API for frontend compatibility
+    res.json({ data: models });
   } catch (error) {
     console.error('Error fetching models from OpenRouter:', error);
     res.status(500).json({ error: 'Failed to fetch models', details: error.message });
