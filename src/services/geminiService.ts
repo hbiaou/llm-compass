@@ -39,18 +39,22 @@ export const getModelRecommendations = async (
       }),
     });
 
+    // Read response body only once - clone if we need to read it multiple ways
+    const responseText = await response.text();
+    
     if (!response.ok) {
-      let errorData;
+      let errorMessage = `HTTP error! status: ${response.status}`;
       try {
-        errorData = await response.json();
+        const errorData = JSON.parse(responseText);
+        errorMessage = errorData.error || errorData.details || errorMessage;
       } catch {
-        errorData = { error: `HTTP error! status: ${response.status}`, details: await response.text() };
+        // Response is not JSON, use text directly
+        errorMessage = responseText || errorMessage;
       }
-      const errorMessage = errorData.error || errorData.details || `HTTP error! status: ${response.status}`;
       throw new Error(errorMessage);
     }
 
-    const recommendations = await response.json();
+    const recommendations = JSON.parse(responseText);
     return recommendations as Recommendation[];
   } catch (error) {
     console.error('Error fetching recommendations:', error);
